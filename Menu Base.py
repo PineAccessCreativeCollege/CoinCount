@@ -16,9 +16,15 @@ def Main():
         lookupTable = pd.DataFrame(lookupData)
         print(lookupTable)
 
+
+        def FileReader():
+            pass
+
+
         def CoinDataValidation(coinType, bagWeight, lookupData):
             typeCheck = coinType
             inputBagWeight = bagWeight
+            bagValid = False
             coinValidated = None
             activeIndex = None
         
@@ -77,14 +83,21 @@ def Main():
                 if bagValid == True:
                     return coinValidated
             else:
+                coinValidated = False
+                bagValid = False
                 difference = abs(properBagWeight - inputBagWeight)
                 print("A value difference of " + str(difference) + " has been detected")
                 singleCoinWeight = (lookupTable.iloc[activeIndex]["weight each coin"])
                 if abs(singleCoinWeight % difference) == 0:
                     coinsNeeded = difference/singleCoinWeight
                     print(str(coinsNeeded) + " coin/s need to be added")
+                    return bagValid
                 else:
                     print("Coin type error, remainder weight not divisible by weight per coin")
+                    return bagValid
+
+        def FileWrite():
+            pass
 
 
         allValidated = False
@@ -104,6 +117,13 @@ def Main():
             except ValueError:
                 print("Value Error: Terminating")
 
+
+            runningTData = {"Bags Checked": [0],
+                            "Total Value": [0]}
+
+            runningTotal = pd.DataFrame(runningTData)
+            print(runningTotal)
+
             
             inputValidated = CoinDataValidation(coinType, bagWeight, lookupData)
 
@@ -112,8 +132,8 @@ def Main():
                 allValidated = True
             else:
                 allValidated = False
-            
 
+        Menu()
 
     def DataMenu():
         print("Place")
@@ -124,7 +144,9 @@ def Main():
         print("Place")
         menuTitle = """--Coin Count--
 1 - Main Loop
-2 - Data Menu"""
+2 - Data Menu
+3 - Running Total
+4 - End Program"""
         print(menuTitle)
 
         try:
@@ -137,6 +159,10 @@ def Main():
             MainLoop()
         elif menuChoice == 2:
             print("Loading Data Menu")
+        elif menuChoice == 3:
+            print("Loading Running Total")
+        elif menuChoice == 4:
+            print("Ending session... Please do not close the program")
         else:
             print("Error: Out of range")
     
