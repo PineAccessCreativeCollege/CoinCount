@@ -1,5 +1,7 @@
 import unittest
 import pandas as pd
+import csv
+from pathlib import Path
 
 def Main():
 
@@ -74,14 +76,15 @@ def Main():
                 case _:
                     print("Invalid Coin Entered")
                     coinValidated = False
-                    return coinValidated
+                    return coinValidated, bagValue
 
 
             properBagWeight = (lookupTable.iloc[activeIndex]["total bag weight"])
+            bagValue = (lookupTable.iloc[activeIndex]["bag value"])
             if inputBagWeight == properBagWeight:
                 bagValid = True
                 if bagValid == True:
-                    return coinValidated
+                    return coinValidated, bagValue
             else:
                 coinValidated = False
                 bagValid = False
@@ -91,17 +94,18 @@ def Main():
                 if abs(singleCoinWeight % difference) == 0:
                     coinsNeeded = difference/singleCoinWeight
                     print(str(coinsNeeded) + " coin/s need to be added")
-                    return bagValid
+                    return bagValid, bagValue
                 else:
                     print("Coin type error, remainder weight not divisible by weight per coin")
-                    return bagValid
-
-        def FileWrite():
-            pass
-
+                    return bagValid, bagValue
 
         allValidated = False
-            
+        bagsCheckedCurrentSession = 0
+        sessionValue = 0
+        runningTData = {'Bags Checked': 0,
+                        'Total Value': 0}
+
+                    
         while allValidated == False:
 
             try:
@@ -118,26 +122,68 @@ def Main():
                 print("Value Error: Terminating")
 
 
-            runningTData = {"Bags Checked": [0],
-                            "Total Value": [0]}
-
-            runningTotal = pd.DataFrame(runningTData)
-            print(runningTotal)
 
             
-            inputValidated = CoinDataValidation(coinType, bagWeight, lookupData)
+            inputValidated, value = CoinDataValidation(coinType, bagWeight, lookupData)
+            bagsCheckedCurrentSession += 1
 
             if inputValidated == True:
+                sessionValue += value
                 print("yay")
-                allValidated = True
+                choiceAllValidated = input("Are you Finished Adding Data? [Y] or [N]: ")
+                if choiceAllValidated == "Y":
+                    allValidated = True
+                elif choiceAllValidated == "N":
+                    allValidated = False
+                else:
+                    print("Error: Returning to menu (Progress will be saved)")
+                    allValidated = True
             else:
                 allValidated = False
+
+        runningTData["Bags Checked"] = bagsCheckedCurrentSession
+        runningTData["Total Value"] = sessionValue
+        runningTotal = pd.DataFrame(runningTData, index=[0])
+        runningTotal.to_csv('RunningTotalData.csv')
 
         Menu()
 
     def DataMenu():
-        print("Place")
-    
+        pass
+    def RunningTotal():
+        runningTotalTXT = """--Running Total--
+Your running total is as follows: """
+        print(runningTotalTXT)
+
+        with open('RunningTotalData.csv', mode='r') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
+            line_count = 0
+            for row in csv_reader:
+                if line_count == 0:
+                    #print(f'Column names are {", ".join(row)}')
+                    line_count += 1
+                print(f'{row["Bags Checked"]} bag(s) have been checked. With a total value of £{row["Total Value"]}.')
+                line_count += 1
+            #print(f'Processed {line_count} lines.')
+            Menu()
+
+    def EndProgram():
+
+        with open('RunningTotalData.csv', mode='r') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
+            line_count = 0
+            for row in csv_reader:
+                if line_count == 0:
+                    #print(f'Column names are {", ".join(row)}')
+                    line_count += 1
+                BagsCounted = row["Bags Checked"]
+                
+                line_count += 1
+            #print(f'Processed {line_count} lines.')
+            Menu()
+
+    def Initial():
+        pass
     
     def Menu():
         menuChoice = 0
@@ -159,12 +205,25 @@ def Main():
             MainLoop()
         elif menuChoice == 2:
             print("Loading Data Menu")
+            DataMenu()
         elif menuChoice == 3:
             print("Loading Running Total")
+
+            my_file = Path("RunningTotalData.csv")
+            if my_file.is_file():
+                RunningTotal()
+            else:
+                runningTData = {'Bags Checked': 0,
+                        'Total Value': 0}
+                runningTotal = pd.DataFrame(runningTData, index=[0])
+                runningTotal.to_csv('RunningTotalData.csv')
+                
         elif menuChoice == 4:
             print("Ending session... Please do not close the program")
+            EndProgram()
         else:
             print("Error: Out of range")
     
+    Initial()
     Menu()
 Main()
