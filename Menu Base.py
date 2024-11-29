@@ -101,17 +101,20 @@ def Main():
 
         allValidated = False
         bagsCheckedCurrentSession = 0
+        countingErrors = 0
         sessionValue = 0
         runningTData = {'Bags Checked': 0,
-                        'Total Value': 0}
-
+                        'Total Value': 0,
+                        'Bags Check Fails': 0,
+                        'User Name': ""}
                     
         while allValidated == False:
+            
 
             try:
-                nameInput = str(input("Please enter your name: "))
-            except ValueError:
-                print("Value Error: Terminating")
+                nameInput
+            except NameError:
+                nameInput = Login()
             try:
                 bagWeight = float(input("Enter the weight of the bag: "))
             except ValueError:
@@ -120,9 +123,6 @@ def Main():
                 coinType = str(input("What type of coin is in the bag? [£2, £1, 50p, 20p, 10p, 5p, 2p, 1p]: "))
             except ValueError:
                 print("Value Error: Terminating")
-
-
-
             
             inputValidated, value = CoinDataValidation(coinType, bagWeight, lookupData)
             bagsCheckedCurrentSession += 1
@@ -140,13 +140,35 @@ def Main():
                     allValidated = True
             else:
                 allValidated = False
+                countingErrors += 1
+                choiceAllValidated = input("Are you Finished Adding Data? [Y] or [N]: ")
+                if choiceAllValidated == "Y":
+                    allValidated = True
+                elif choiceAllValidated == "N":
+                    allValidated = False
+                else:
+                    print("Error: Returning to menu (Progress will be saved)")
+                    allValidated = True
 
+        runningTData["User Name"] = nameInput
         runningTData["Bags Checked"] = bagsCheckedCurrentSession
         runningTData["Total Value"] = sessionValue
+        runningTData["Bags Check Fails"] = countingErrors
         runningTotal = pd.DataFrame(runningTData, index=[0])
-        runningTotal.to_csv('RunningTotalData.csv')
+        runningTotal.to_csv('MainLoopDataCSV.csv')
 
-        Menu()
+        
+        print("Returning to Menu")
+        Menu(None)
+
+    def Login():
+        try:
+            nameInput = str(input("Please enter your name: "))
+            return nameInput
+        except ValueError:
+            print("Value Error: Terminating")
+            Menu(None)
+
 
     def DataMenu():
         pass
@@ -154,8 +176,7 @@ def Main():
         runningTotalTXT = """--Running Total--
 Your running total is as follows: """
         print(runningTotalTXT)
-
-        with open('RunningTotalData.csv', mode='r') as csv_file:
+        with open('MainLoopDataCSV.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
             line_count = 0
             for row in csv_reader:
@@ -165,34 +186,60 @@ Your running total is as follows: """
                 print(f'{row["Bags Checked"]} bag(s) have been checked. With a total value of £{row["Total Value"]}.')
                 line_count += 1
             #print(f'Processed {line_count} lines.')
-            Menu()
+            Menu(None)
 
     def EndProgram():
+        
+        totalData = pd.read_csv('CoinCount.txt')
+        print(totalData)
 
-        with open('RunningTotalData.csv', mode='r') as csv_file:
+
+        with open('MainLoopDataCSV.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
             line_count = 0
             for row in csv_reader:
                 if line_count == 0:
                     #print(f'Column names are {", ".join(row)}')
                     line_count += 1
-                BagsCounted = row["Bags Checked"]
-                
+                bagsCountedSession = row["Bags Checked"]
+                totalSessionValue = row["Total Value"]
+                bagCheckFailsSession = row["Bags Check Fails"]
+                sessionName = row["User Name"]                
                 line_count += 1
-            #print(f'Processed {line_count} lines.')
-            Menu()
+        
+        if sessionName not in totalData['Name'].values:
+            print(f"{sessionName} does not exist in the 'Name' column. Creating user data")
+            
+            addName = sessionName
+            #df = df.append({'Name': new_name}, ignore_index=True)
+        else:
+            print(f"{sessionName} already exists in the 'Name' column. Updating user data")
+            #,Bags Checked,Percentage Correct,Check Fails
+            globalBagsChecked = totalData.iloc
+
+        with open('CoinCount.txt', mode='r') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
+            line_count = 0
+            for row1 in csv_reader:
+                if line_count == 0:
+                    #print(f'Column names are {", ".join(row)}')
+                    line_count += 1
+                BagsCountedSessionTXT = row["Bags Checked"]
+                print(BagsCountedSessionTXT)
+                line_count += 1
 
     def Initial():
         pass
     
-    def Menu():
+    def Menu(name):
         menuChoice = 0
         print("Place")
         menuTitle = """--Coin Count--
 1 - Main Loop
 2 - Data Menu
 3 - Running Total
-4 - End Program"""
+4 - End Program
+5 - Login"""
         print(menuTitle)
 
         try:
@@ -201,23 +248,25 @@ Your running total is as follows: """
             print("Value Error: Terminating")
 
         if menuChoice == 1:
-            print("Loading Main Loop")
+            print("Loading Main Loop")              
             MainLoop()
         elif menuChoice == 2:
             print("Loading Data Menu")
             DataMenu()
-        elif menuChoice == 3:
-            print("Loading Running Total")
 
-            my_file = Path("RunningTotalData.csv")
+        elif menuChoice == 3:
+
+            my_file = Path("MainLoopDataCSV.csv")
             if my_file.is_file():
                 RunningTotal()
             else:
                 runningTData = {'Bags Checked': 0,
-                        'Total Value': 0}
+                                'Total Value': 0,
+                                'Bags Check Fails': 0,
+                                'User Name': ""}
                 runningTotal = pd.DataFrame(runningTData, index=[0])
                 runningTotal.to_csv('RunningTotalData.csv')
-                
+
         elif menuChoice == 4:
             print("Ending session... Please do not close the program")
             EndProgram()
@@ -225,5 +274,6 @@ Your running total is as follows: """
             print("Error: Out of range")
     
     Initial()
-    Menu()
+    name = None
+    Menu(name)
 Main()
