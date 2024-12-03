@@ -1,2 +1,4 @@
-,Bags Checked,Total Value,Bags Check Fails,User Name
-0,1,20,0,syd
+User Name,Bags Checked,Total Value,Bags Check Fails
+Sue,1,20,0
+Syd,4,80,0
+syd,1,20,0
