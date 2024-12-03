@@ -2,6 +2,7 @@ import unittest
 import pandas as pd
 import csv
 from pathlib import Path
+import os
 
 def Main():
 
@@ -107,7 +108,7 @@ def Main():
                         'Total Value': 0,
                         'Bags Check Fails': 0,
                         'User Name': ""}
-                    
+                
         while allValidated == False:
             
 
@@ -154,8 +155,30 @@ def Main():
         runningTData["Bags Checked"] = bagsCheckedCurrentSession
         runningTData["Total Value"] = sessionValue
         runningTData["Bags Check Fails"] = countingErrors
-        runningTotal = pd.DataFrame(runningTData, index=[0])
-        runningTotal.to_csv('MainLoopDataCSV.csv')
+        
+        my_file = Path("MainLoopDataCSV.csv")
+        if my_file.is_file():
+                runningTSession = pd.DataFrame(runningTData, index=[0])
+                runningTPrev = pd.read_csv('MainLoopDataCSV.csv', index_col=0)
+                runningTConc = pd.concat([runningTPrev, runningTSession])
+                runningTCond = runningTConc.groupby(['User Name']).sum()
+                os.remove('MainLoopDataCSV.csv')
+                #print(runningTSession)
+                #print(runningTPrev)
+                #print(runningTConc)
+                runningTCond.to_csv('MainLoopDataCSV.csv')
+        else:
+            runningTSession = pd.DataFrame(runningTData, index=[0])
+            runningTSession.to_csv('MainLoopDataCSV.csv')
+            
+            
+
+
+        """Check for existance of MainLoopDataCSV.csv and if it exists then convert to a dataframe and add a new row
+        to the csv using data from runningTData and or runningTotal it depends already done this so just copy code
+        OK now this works I need to use isin to check whether the session name is already contained inside of the ru
+        nning total from the previous session and combine the data values"""
+        
 
         
         print("Returning to Menu")
@@ -183,7 +206,7 @@ Your running total is as follows: """
                 if line_count == 0:
                     #print(f'Column names are {", ".join(row)}')
                     line_count += 1
-                print(f'{row["Bags Checked"]} bag(s) have been checked. With a total value of £{row["Total Value"]}.')
+                print(f'{row["Bags Checked"]} bag(s) have been checked. With a total value of £{row["Total Value"]} by user {row["User Name"]}.')
                 line_count += 1
             #print(f'Processed {line_count} lines.')
             Menu(None)
@@ -233,7 +256,7 @@ Your running total is as follows: """
     
     def Menu(name):
         menuChoice = 0
-        print("Place")
+        #print("Place")
         menuTitle = """--Coin Count--
 1 - Main Loop
 2 - Data Menu
@@ -272,6 +295,7 @@ Your running total is as follows: """
             EndProgram()
         else:
             print("Error: Out of range")
+            Menu(None)
     
     Initial()
     name = None
