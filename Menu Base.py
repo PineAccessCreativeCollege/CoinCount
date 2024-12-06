@@ -212,65 +212,101 @@ Your running total is as follows: """
             #print(f'Processed {line_count} lines.')
             Menu(None)
 
+
+    ##Program Termination
     def EndProgram():
-
         
-        totalData = pd.read_csv('CoinCountMediator.csv')
-        print(totalData)
+        my_file = Path("MainLoopDataCSV.csv")
+        if my_file.is_file():
+            
+            totalData = pd.read_csv('CoinCountMediator.csv', index_col=0)
+            print(totalData)
 
+            with open('MainLoopDataCSV.csv', mode='r') as csv_file:
+                csv_reader = csv.DictReader(csv_file)
+                line_count = 0
+                for row in csv_reader:
+                    if line_count == 0:
+                        #print(f'Column names are {", ".join(row)}')
+                        line_count += 1
+                    bagsCountedSession = row["Bags Checked"]
+                    bagCheckFailsSession = row["Bags Check Fails"]
+                    sessionName = row["User Name"]
+                    
+                    ##Runs if name has data in dataset
+                    if sessionName not in totalData['Name'].values:
+                        print(f"{sessionName} does not exist in the 'Name' column. Creating user data")
 
-        with open('MainLoopDataCSV.csv', mode='r') as csv_file:
-            csv_reader = csv.DictReader(csv_file)
-            line_count = 0
-            for row in csv_reader:
-                if line_count == 0:
-                    #print(f'Column names are {", ".join(row)}')
+                        percentageCorrectCU = (int(bagCheckFailsSession) / int(bagsCountedSession)) * 100
+                        percentageCorrectCU = 100-percentageCorrectCU
+
+                        userData = {'Name': sessionName,
+                                    'Bags Checked': bagsCountedSession,
+                                    'Percentage Correct': percentageCorrectCU,
+                                    'Check Fails': bagCheckFailsSession}
+
+                        userDataDF = pd.DataFrame(userData, index=[0])
+                        coinCountDataCentral = pd.read_csv('CoinCountMediator.csv', index_col=0)
+                        concatUserData = pd.concat([coinCountDataCentral, userDataDF])
+                        os.remove('CoinCountMediator.csv')
+                        concatUserData.to_csv('CoinCountMediator.csv', index=[0])
+
+                        #df = df.append({'Name': new_name}, ignore_index=True)
+                    ##Runs if data
+                    else:
+                        print(f"{sessionName} already exists in the 'Name' column. Updating user data")
+
+                        coinCountDataCentral = pd.read_csv("CoinCountMediator.csv", index_col=0)
+                        #print(coinCountDataCentral)
+                        
+                        
+                        
+                        
+                        rowIndex = coinCountDataCentral[coinCountDataCentral['Name'] == sessionName].index
+                        sessionDataGrab = coinCountDataCentral.loc[rowIndex]
+                        #Remath
+                        bagsCheckedOriginal = sessionDataGrab['Bags Checked']
+                        bagsCheckedTotal = int(bagsCheckedOriginal.iloc[0]) + int(bagsCountedSession)
+                        bagsWrongOriginal = sessionDataGrab['Check Fails']
+                        bagsWrongTotal = int(bagsWrongOriginal.iloc[0]) + int(bagCheckFailsSession)
+                        
+                        percentageCorrectCU = (int(bagsWrongTotal) / int(bagsCheckedTotal)) * 100
+                        percentageCorrectCU = 100-int(percentageCorrectCU)
+                        
+                        userData = {'Name': sessionName,
+                                    'Bags Checked': bagsCountedSession,
+                                    'Percentage Correct': percentageCorrectCU,
+                                    'Check Fails': bagCheckFailsSession}
+                        
+                        userDataDF = pd.DataFrame(userData, index=[0])
+                        print(userDataDF)
+                        print(coinCountDataCentral)
+                        #print(coinCountDataCentral)
+                        concatData = pd.concat([coinCountDataCentral, userDataDF])
+                        
+                        concatData = concatData.reset_index(drop=True)
+                        
+                        concatData['Bags Checked'] = pd.to_numeric(concatData['Bags Checked'], errors='coerce')
+                        concatData['Check Fails'] = pd.to_numeric(concatData['Check Fails'], errors='coerce')
+                        concatData['Percentage Correct'] = pd.to_numeric(concatData['Percentage Correct'], errors='coerce')
+                        
+                        finalData1 = concatData.groupby(['Name'], as_index=False).sum()
+                        finalData1.loc[rowIndex,'Percentage Correct'] = percentageCorrectCU
+
+                        os.remove('CoinCountMediator.csv')
+                        #print(runningTSession)
+                        #print(runningTPrev)
+                        #print(runningTConc)
+                        finalData1.to_csv('CoinCountMediator.csv', index=True)
                     line_count += 1
-                bagsCountedSession = row["Bags Checked"]
-                bagCheckFailsSession = row["Bags Check Fails"]
-                sessionName = row["User Name"]
-                
-                if sessionName not in totalData['Name'].values:
-                    print(f"{sessionName} does not exist in the 'Name' column. Creating user data")
-
-                    percentageCorrectCU = (int(bagCheckFailsSession) / int(bagsCountedSession)) * 100
-
-                    userData = {'Name': sessionName,
-                                'Bags Checked': bagsCountedSession,
-                                'Percentage Correct': percentageCorrectCU,
-                                'Check Fails': bagCheckFailsSession}
-
-                    userDataDF = pd.DataFrame(userData, index=[0])
-                    coinCountDataCentral = pd.read_csv('CoinCountMediator.csv', index_col=0)
-                    concatUserData = pd.concat([coinCountDataCentral, userDataDF])
-                    os.remove('CoinCountMediator.csv')
-                    concatUserData.to_csv('CoinCountMediator.csv', index=[0])
-
-                    #df = df.append({'Name': new_name}, ignore_index=True)
-                else:
-                    print(f"{sessionName} already exists in the 'Name' column. Updating user data")
-                
-                line_count += 1
-            #,Bags Checked,Percentage Correct,Check Fails
-            globalBagsChecked = totalData.iloc
-                
-        
-       
-
-        with open('CoinCountMediator.csv', mode='r') as csv_file:
-            csv_reader = csv.DictReader(csv_file)
-            line_count = 0
-            for row1 in csv_reader:
-                if line_count == 0:
-                    #print(f'Column names are {", ".join(row)}')
-                    line_count += 1
-                BagsCountedSessionTXT = row["Bags Checked"]
-                print(BagsCountedSessionTXT)
-                line_count += 1
-
+            os.remove('MainLoopDataCSV.csv')
+        else:
+            print("No Data To add or update")
     def Initial():
         pass
     
+    
+    ##Main Menu System
     def Menu(name):
         menuChoice = 0
         #print("Place")
