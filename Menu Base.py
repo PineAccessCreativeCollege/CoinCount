@@ -8,6 +8,10 @@ def Main():
 
    
     def MainLoop():
+        
+        #Asks for user inputs relating to name bag weight and coin type and checks these values agaians the lookupData table
+        #Stores the data for one name before sending the data to a texporary csv file to be transfered to final data saving
+        #Multiple User Names can be concatonated into the CSV file
 
         lookupData = {
         "coin type": ["£2", "£1", "50p", "20p", "10p", "5p", "2p", "1p"],
@@ -23,7 +27,8 @@ def Main():
         def FileReader():
             pass
 
-
+        
+        #Validates User Inputs and informs the user of the type of error
         def CoinDataValidation(coinType, bagWeight, lookupData):
             typeCheck = coinType
             inputBagWeight = bagWeight
@@ -128,6 +133,7 @@ def Main():
             inputValidated, value = CoinDataValidation(coinType, bagWeight, lookupData)
             bagsCheckedCurrentSession += 1
 
+            #Runs if the bag was counted correctly
             if inputValidated == True:
                 sessionValue += value
                 print("yay")
@@ -139,6 +145,8 @@ def Main():
                 else:
                     print("Error: Returning to menu (Progress will be saved)")
                     allValidated = True
+                    
+            #Runs if the bag was counted incorrectly
             else:
                 allValidated = False
                 countingErrors += 1
@@ -157,6 +165,8 @@ def Main():
         runningTData["Bags Check Fails"] = countingErrors
         
         my_file = Path("MainLoopDataCSV.csv")
+        
+        #Runs if the file already exists to concat data
         if my_file.is_file():
                 runningTSession = pd.DataFrame(runningTData, index=[0])
                 runningTPrev = pd.read_csv('MainLoopDataCSV.csv', index_col=0)
@@ -164,17 +174,16 @@ def Main():
                 runningTConcat = pd.concat([runningTPrev, runningTSession])
                 runningTCond = runningTConcat.groupby(['User Name']).sum()
                 os.remove('MainLoopDataCSV.csv')
-                #print(runningTSession)
-                #print(runningTPrev)
-                #print(runningTConc)
                 runningTCond.to_csv('MainLoopDataCSV.csv')
+                
+        #Runs if the file doesnt exist to create and add data
         else:
             runningTSession = pd.DataFrame(runningTData, index=[0])
             runningTSession.to_csv('MainLoopDataCSV.csv')
             
             
 
-
+        #A writup so i could do some logical thinking about the problem
         """Check for existance of MainLoopDataCSV.csv and if it exists then convert to a dataframe and add a new row
         to the csv using data from runningTData and or runningTotal it depends already done this so just copy code
         OK now this works I need to use isin to check whether the session name is already contained inside of the ru
@@ -186,6 +195,8 @@ def Main():
         Menu(None)
 
     def Login():
+        
+        #Unimplamented: Please Ignore
         try:
             nameInput = str(input("Please enter your name: "))
             return nameInput
@@ -193,9 +204,16 @@ def Main():
             print("Value Error: Terminating")
             Menu(None)
 
-
+    
+    #Outputs the total data from the previous session/viewing and saving of data requires the respective menu item to be run
     def DataMenu():
-        pass
+        userDataDF = pd.read_csv('CoinCount.txt', index_col=[0])
+        print("\n---Sorted User Data---")
+        print("\n",userDataDF)
+        Menu(None)
+        
+    
+    #Outputs the running total created in the temporary csv created in the MainLoop() area
     def RunningTotal():
         runningTotalTXT = """--Running Total--
 Your running total is as follows: """
@@ -213,14 +231,23 @@ Your running total is as follows: """
             Menu(None)
 
 
-    ##Program Termination
+
+    ##Program Termination and data saving, concatanation, and remathing of values
     def EndProgram():
         
-        my_file = Path("MainLoopDataCSV.csv")
+                
+        my_file = Path("CoinCount.txt")
         if my_file.is_file():
+            pass
+        else:
+            f = open("CoinCount.txt", "x")
+            f.close()
+        
+        my_file1 = Path("MainLoopDataCSV.csv")
+        if my_file1.is_file():
             
             totalData = pd.read_csv('CoinCountMediator.csv', index_col=0)
-            print(totalData)
+            #print(totalData)
 
             with open('MainLoopDataCSV.csv', mode='r') as csv_file:
                 csv_reader = csv.DictReader(csv_file)
@@ -236,7 +263,8 @@ Your running total is as follows: """
                     ##Runs if name has data in dataset
                     if sessionName not in totalData['Name'].values:
                         print(f"{sessionName} does not exist in the 'Name' column. Creating user data")
-
+                        
+                        #Remaths percentage values
                         percentageCorrectCU = (int(bagCheckFailsSession) / int(bagsCountedSession)) * 100
                         percentageCorrectCU = 100-percentageCorrectCU
 
@@ -246,27 +274,29 @@ Your running total is as follows: """
                                     'Check Fails': bagCheckFailsSession}
 
                         userDataDF = pd.DataFrame(userData, index=[0])
+                        
                         coinCountDataCentral = pd.read_csv('CoinCountMediator.csv', index_col=0)
+                        
+                        #Data Concatanation
+                        
                         concatUserData = pd.concat([coinCountDataCentral, userDataDF])
                         os.remove('CoinCountMediator.csv')
                         concatUserData.to_csv('CoinCountMediator.csv', index=[0])
 
-                        #df = df.append({'Name': new_name}, ignore_index=True)
-                    ##Runs if data
+                        
+                    ##Runs if name doesnt have data in dataset
                     else:
                         print(f"{sessionName} already exists in the 'Name' column. Updating user data")
 
                         coinCountDataCentral = pd.read_csv("CoinCountMediator.csv", index_col=0)
-                        #print(coinCountDataCentral)
-                        
-                        
-                        
                         
                         rowIndex = coinCountDataCentral[coinCountDataCentral['Name'] == sessionName].index
                         sessionDataGrab = coinCountDataCentral.loc[rowIndex]
-                        #Remath
+                        
+                        #Remaths percentage values
                         bagsCheckedOriginal = sessionDataGrab['Bags Checked']
                         bagsCheckedTotal = int(bagsCheckedOriginal.iloc[0]) + int(bagsCountedSession)
+                        
                         bagsWrongOriginal = sessionDataGrab['Check Fails']
                         bagsWrongTotal = int(bagsWrongOriginal.iloc[0]) + int(bagCheckFailsSession)
                         
@@ -279,11 +309,10 @@ Your running total is as follows: """
                                     'Check Fails': bagCheckFailsSession}
                         
                         userDataDF = pd.DataFrame(userData, index=[0])
-                        print(userDataDF)
-                        print(coinCountDataCentral)
-                        #print(coinCountDataCentral)
-                        concatData = pd.concat([coinCountDataCentral, userDataDF])
                         
+                        #Data Concatanation
+                        
+                        concatData = pd.concat([coinCountDataCentral, userDataDF])
                         concatData = concatData.reset_index(drop=True)
                         
                         concatData['Bags Checked'] = pd.to_numeric(concatData['Bags Checked'], errors='coerce')
@@ -294,14 +323,41 @@ Your running total is as follows: """
                         finalData1.loc[rowIndex,'Percentage Correct'] = percentageCorrectCU
 
                         os.remove('CoinCountMediator.csv')
-                        #print(runningTSession)
-                        #print(runningTPrev)
-                        #print(runningTConc)
                         finalData1.to_csv('CoinCountMediator.csv', index=True)
                     line_count += 1
             os.remove('MainLoopDataCSV.csv')
         else:
-            print("No Data To add or update")
+            print("\nNo Data To add or update")
+            
+        #Gathers data into a txt file
+        #This implementation is lazy and inefficient for large datasets.
+        #I am not fixing it :3
+        
+        txtData = pd.read_csv('CoinCountMediator.csv', index_col=[0])
+        txtData['Percentage Correct'] = pd.to_numeric(txtData['Percentage Correct'], errors='coerce')
+                        
+        sortedValues = txtData.sort_values(by=['Percentage Correct'], ascending=[False])
+        
+        sortedRows = []
+
+        for index, row in sortedValues.iterrows():
+            sortedValuesCurrentRow = {
+                "Name": row["Name"],
+                "Bags Checked": row["Bags Checked"],
+                "Percentage Correct": row["Percentage Correct"]
+            }
+            
+            sortedRows.append(sortedValuesCurrentRow)
+
+        userDataDF = pd.DataFrame(sortedRows)
+        os.remove('CoinCount.txt')
+        userDataDF.to_csv('CoinCount.txt', index=True)
+
+        print("---Sorted Data---")
+        print("\n",userDataDF)
+        
+        
+        
     def Initial():
         pass
     
@@ -313,21 +369,21 @@ Your running total is as follows: """
         menuTitle = """--Coin Count--
 1 - Main Loop
 2 - Data Menu
-3 - Running Total
-4 - End Program
+3 - Running Total: View Running Total
+4 - End Program/SaveData
 5 - Login"""
-        print(menuTitle)
+        print("\n",menuTitle)
 
         try:
-            menuChoice = int(input("Enter the number refering to a menu item: "))
+            menuChoice = int(input("\nEnter the number refering to a menu item: "))
         except ValueError:
-            print("Value Error: Terminating")
+            print("\nValue Error: Terminating")
 
         if menuChoice == 1:
-            print("Loading Main Loop")              
+            print("\nLoading Main Loop")              
             MainLoop()
         elif menuChoice == 2:
-            print("Loading Data Menu")
+            print("\nLoading Data Menu")
             DataMenu()
 
         elif menuChoice == 3:
@@ -342,12 +398,18 @@ Your running total is as follows: """
                                 'User Name': ""}
                 runningTotal = pd.DataFrame(runningTData, index=[0])
                 runningTotal.to_csv('RunningTotalData.csv')
+                print("\nNo Data Generated: go make some!!")
+                Menu(None)
 
         elif menuChoice == 4:
-            print("Ending session... Please do not close the program")
+            print("\nEnding session... Please do not close the program")
             EndProgram()
+            
+        elif menuChoice == 5:
+            print("\nUnimplemented")
+            Menu(None)
         else:
-            print("Error: Out of range")
+            print("\nError: Out of range")
             Menu(None)
     
     Initial()
